@@ -175,6 +175,35 @@ button:focus-visible{outline:4px solid var(--azul);outline-offset:3px}
 .party .acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .big{padding:14px 22px;border-radius:999px;font-weight:800;font-size:18px;color:#fff;box-shadow:0 5px 0 rgba(42,33,80,.25)}
 .big:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(42,33,80,.25)}
+/* versión completa */
+.lockpill{position:absolute;right:14px;bottom:14px;background:rgba(42,33,80,.28);color:#fff;border-radius:999px;padding:4px 10px;font-size:13px;font-weight:800;display:none}
+.t-amarillo .lockpill{background:rgba(42,33,80,.16);color:var(--tinta)}
+.tile.locked .lockpill{display:block}
+.parents{display:flex;justify-content:center}
+.linkbtn{font-weight:800;color:var(--tinta);background:var(--papel);border-radius:999px;padding:10px 18px;box-shadow:var(--sombra)}
+.linkbtn.ok{color:var(--verde)}
+.party .box.left{text-align:left}
+.party .eyebrow{margin:0 0 4px;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-2)}
+.party h4{font-family:var(--display);font-weight:800;font-size:30px;margin:0 0 10px;line-height:1.05;color:var(--tinta)}
+.party h4 .u{color:var(--rojo)}
+.q-math{font-family:var(--display);font-weight:800;font-size:40px;text-align:center;margin:6px 0 12px;color:var(--tinta)}
+.field{width:100%;font:inherit;font-size:22px;font-weight:800;text-align:center;padding:12px;border-radius:16px;border:3px solid #E6E0F2;background:#FBFAFE;color:var(--tinta);outline:none}
+.field:focus{border-color:var(--azul)}
+.err{color:var(--rojo);font-weight:800;min-height:1.3em;margin:8px 0 0;text-align:center}
+.perks{list-style:none;padding:0;margin:0 0 14px;display:flex;flex-direction:column;gap:8px}
+.perks li{display:flex;gap:10px;align-items:flex-start;font-weight:700;color:var(--tinta)}
+.perks li::before{content:"✓";flex:none;width:24px;height:24px;border-radius:50%;background:#DDF6E6;color:var(--verde);display:grid;place-items:center;font-weight:800;font-size:14px}
+.price{display:flex;align-items:baseline;gap:8px;margin:0 0 12px}
+.price b{font-family:var(--display);font-size:38px;color:var(--tinta);line-height:1}
+.price span{font-weight:700;color:var(--tinta-2)}
+.big[disabled]{opacity:.45;cursor:not-allowed}
+.sep{display:flex;align-items:center;gap:10px;color:var(--tinta-2);font-weight:800;font-size:13px;margin:16px 0 10px}
+.sep::before,.sep::after{content:"";flex:1;height:2px;background:#EEE9F6}
+.row{display:flex;gap:8px}
+.row .field{font-size:17px;text-transform:uppercase;letter-spacing:.06em}
+.row .big{flex:none;font-size:16px;padding:12px 16px}
+.x{position:absolute;top:10px;right:12px;width:40px;height:40px;border-radius:50%;background:#F2EEF8;font-size:18px}
+.party .box{position:relative}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:101}
 .shake{animation:shake .35s}
 @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
@@ -211,6 +240,7 @@ button:focus-visible{outline:4px solid var(--azul);outline-offset:3px}
       <button class="tile t-album" data-game="album"><span class="skill">Premios</span><span class="ico">📒</span><h2>Mi álbum de stickers</h2><p id="albumSub">Junta estrellas y desbloquea stickers.</p></button>
     </div>
     <p class="hint">Cada juego terminado te da estrellas ⭐</p>
+    <div class="parents"><button class="linkbtn" id="parentsBtn">👨‍👩‍👧 Papás: desbloquear KIDU completo</button></div>
   </section>
 
   <!-- JUEGO -->
@@ -279,8 +309,65 @@ $('#sayBtn').addEventListener('click',()=>say(instrSpeech));
 $('#backBtn').addEventListener('click',goHome);
 
 function goHome(){ if(current&&current.stop) current.stop(); current=null; closeParty(); $('#game').hidden=true; $('#home').hidden=false; try{speechSynthesis.cancel()}catch(e){} window.scrollTo(0,0); }
+/* ---------- versión completa ---------- */
+const CONFIG = {
+  free: ['globos','memoria','album'],          // juegos gratis
+  price: 'Q49',                                  // precio de ejemplo
+  priceNote: 'pago único',
+  buyReady: false,                               // true cuando el cobro esté conectado
+  // códigos válidos guardados como huella SHA-256 (no se ven en el código)
+  codes: ['85bf20cc946d885b1d4e9d4c8b3696768c2487e20681d24988ffa330ba8d90ae']
+};
+S.full = store.get('full', false);
+const isLocked = n => !S.full && !CONFIG.free.includes(n);
+function paintLocks(){
+  document.querySelectorAll('.tile[data-game]').forEach(t=>{
+    if(!t.querySelector('.lockpill')){ const p=document.createElement('span'); p.className='lockpill'; p.textContent='🔒 Completo'; t.appendChild(p); }
+    t.classList.toggle('locked', isLocked(t.dataset.game));
+  });
+  const b=$('#parentsBtn'); b.textContent = S.full ? '✓ KIDU completo activado' : '👨‍👩‍👧 Papás: desbloquear KIDU completo'; b.classList.toggle('ok',S.full);
+}
+let modalEl=null;
+function modal(html){ closeModal(); modalEl=document.createElement('div'); modalEl.className='party'; modalEl.innerHTML=`<div class="box left">${html}<button class="x" aria-label="Cerrar">✕</button></div>`;
+  document.body.appendChild(modalEl); modalEl.querySelector('.x').onclick=closeModal;
+  modalEl.addEventListener('click',e=>{ if(e.target===modalEl) closeModal(); }); return modalEl; }
+function closeModal(){ if(modalEl){ modalEl.remove(); modalEl=null; } }
+
+function parentGate(next){
+  const a=3+rnd(7), b=3+rnd(7);
+  const m=modal(`<p class="eyebrow">Solo para adultos</p><h4>Pregunta para papá o mamá</h4>
+    <p style="margin:0;font-weight:700;color:var(--tinta-2)">Para continuar, resuelve:</p>
+    <div class="q-math">${a} × ${b} = ?</div>
+    <input class="field" id="gateIn" type="number" inputmode="numeric" autocomplete="off" aria-label="Respuesta">
+    <p class="err" id="gateErr"></p>
+    <div class="acts" style="display:flex;justify-content:center;margin-top:6px"><button class="big" style="background:var(--tinta)" id="gateOk">Continuar</button></div>`);
+  const inp=m.querySelector('#gateIn'); setTimeout(()=>inp.focus(),50);
+  const go=()=>{ if(Number(inp.value)===a*b){ next(); } else { m.querySelector('#gateErr').textContent='Esa no es la respuesta. Intenta otra vez.'; sfx.oops(); inp.value=''; setTimeout(()=>{closeModal(); parentGate(next);},900);} };
+  m.querySelector('#gateOk').onclick=go; inp.addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
+}
+async function sha(txt){ const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(txt)); return [...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+function showUnlock(after){
+  const locked=['Repite la luz','Figuras','Xilófono','¿Cuántos hay?','¿Con qué letra?'];
+  const m=modal(`<p class="eyebrow">Versión completa</p><h4>KID<span class="u">U</span> completo</h4>
+    <ul class="perks"><li>Los 7 juegos desbloqueados, incluidos ${locked.slice(0,2).join(' y ')}</li><li>Dos niveles de dificultad, de 3 a 9 años</li><li>Sin anuncios y sin compras dentro del juego</li><li>Funciona en celular, tablet y computadora</li></ul>
+    <div class="price"><b>${CONFIG.price}</b><span>${CONFIG.priceNote}</span></div>
+    <button class="big" style="background:var(--verde);width:100%" id="buyBtn" ${CONFIG.buyReady?'':'disabled'}>${CONFIG.buyReady?'Comprar':'Compra disponible muy pronto'}</button>
+    <div class="sep">¿Ya tienes un código?</div>
+    <div class="row"><input class="field" id="codeIn" autocomplete="off" placeholder="KIDU-XXXX" aria-label="Código"><button class="big" style="background:var(--azul)" id="codeOk">Activar</button></div>
+    <p class="err" id="codeErr"></p>`);
+  const inp=m.querySelector('#codeIn');
+  const go=async()=>{ const v=inp.value.trim().toUpperCase(); if(!v) return;
+    let h=''; try{ h=await sha(v);}catch(e){}
+    if(CONFIG.codes.includes(h)){ S.full=true; store.set('full',true); paintLocks(); closeModal(); sfx.win(); confetti(); say('¡Listo! KIDU completo activado'); if(after) setTimeout(after,600); }
+    else { m.querySelector('#codeErr').textContent='Ese código no es válido. Revísalo e intenta de nuevo.'; sfx.oops(); } };
+  m.querySelector('#codeOk').onclick=go; inp.addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
+}
+$('#parentsBtn').addEventListener('click',()=>{ if(!S.full) parentGate(()=>showUnlock()); });
+paintLocks();
+
 function openGame(name){
-  ac(); const G=GAMES[name]; $('#home').hidden=true; $('#game').hidden=false;
+  if(isLocked(name)){ sfx.flip(); say('Este juego es de KIDU completo. Pídele ayuda a papá o mamá'); parentGate(()=>showUnlock(()=>openGame(name))); return; }
+  closeModal(); ac(); const G=GAMES[name]; $('#home').hidden=true; $('#game').hidden=false;
   $('#gTitle').textContent=G.title; $('#gDots').innerHTML=''; const st=$('#stage'); st.innerHTML='';
   current = G.start(st, S.age==='grande'); current.name=name; window.scrollTo(0,0);
 }
